@@ -66,11 +66,22 @@ pub const Action = enum {
     }
 
     const Version = struct {
-        pub fn run(alloc: std.mem.Allocator) !u8 {
-            const output = try std.fmt.allocPrint(alloc, "daily-counter: {s}\nzig: {}\narch: {s}", .{ "0.1.0", builtin.zig_version, builtin.target.cpu.arch.genericName() });
-            defer alloc.free(output);
+        pub fn run(_: std.mem.Allocator) !u8 {
+            const build_mode: []const u8 = switch (builtin.mode) {
+                .Debug => "debug",
+                .ReleaseSafe => "release-safe",
+                .ReleaseFast => "release-fast",
+                .ReleaseSmall => "release-small",
+            };
 
-            try std.io.getStdOut().writeAll(output);
+            const stdout = std.io.getStdOut().writer();
+
+            try stdout.print("Name        : {s}\n", .{ config.name });
+            try stdout.print("Version     : {s}\n", .{ config.version });
+            try stdout.print("Zig version : {}\n", .{builtin.zig_version});
+            try stdout.print("Arch        : {s}\n", .{builtin.target.cpu.arch.genericName()});
+            try stdout.print("Build mode  : {s}\n", .{build_mode});
+
             return 0;
         }
     };
@@ -78,7 +89,7 @@ pub const Action = enum {
     const Help = struct {
         pub fn run(_: std.mem.Allocator) !u8 {
             const help =
-                \\Usage: daily-counter [OPTIONS]
+                \\Usage: f-counter [OPTIONS]
                 \\  -h, --help, +help           Print this help message.
                 \\  -v, --version, +version     Print the version of the CLI tool.
                 \\  +show-date                  Show today's date.

@@ -228,7 +228,6 @@ pub const NotionClient = struct {
         }
 
         pub fn call(self: *const Self, client: *std.http.Client, alloc: std.mem.Allocator) ![]const u8 {
-
             const url = try Self.Query.get_url(self, alloc);
             defer alloc.free(url);
 
@@ -251,7 +250,6 @@ pub const NotionClient = struct {
             const result = try response_arraylist.toOwnedSlice();
 
             std.debug.assert(response.status == .ok);
-
 
             return result;
         }
@@ -363,7 +361,7 @@ test "NotionClient.Query.call" {
     var env_map = try std.process.getEnvMap(std.heap.page_allocator);
     defer env_map.deinit();
 
-    const notion_client = try NotionClient.from_env(&env_map);
+    const notion_client = NotionClient.from_env(&env_map) catch return error.SkipZigTest;
 
     const response = try NotionClient.Query.call(&notion_client, &client, allocator);
 
@@ -429,7 +427,7 @@ test "NotionClient.Update.call" {
     var env_map = try std.process.getEnvMap(std.heap.page_allocator);
     defer env_map.deinit();
 
-    const notion_client = try NotionClient.from_env(&env_map);
+    const notion_client = NotionClient.from_env(&env_map) catch return error.SkipZigTest;
 
     const query_response = try NotionClient.Query.call(&notion_client, &client, allocator);
 

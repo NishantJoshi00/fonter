@@ -4,7 +4,18 @@ const std = @import("std");
 // declaratively construct a build graph that will be executed by an external
 // runner.
 pub fn build(b: *std.Build) !void {
+    const name = b.option([]const u8, "name", "name of the project") orelse "f-counter";
+    const version = b.option([]const u8, "version", "version of the project") orelse "0.1.0";
+
     const options = b.addOptions();
+
+    // const load_zon = try std.fs.cwd().openFile("build.zig.zon", .{});
+    // defer load_zon.close();
+
+    // const read_zon = try load_zon.reader().readAllAlloc(std.heap.page_allocator, 1024 * 1024 * 2);
+
+    // var parsed_zon = try std.zig.Ast.parse(std.heap.page_allocator, @ptrCast(read_zon), .zon);
+    // defer parsed_zon.deinit(std.heap.page_allocator);
 
     var env = try std.process.getEnvMap(std.heap.page_allocator);
     defer env.deinit();
@@ -13,8 +24,8 @@ pub fn build(b: *std.Build) !void {
 
     options.addOption(?[]const u8, "NOTION_DATABASE_ID", env.get("NOTION_DATABASE_ID"));
 
-    // options.addOption(?[]const u8, "version", zon_file.version);
-    // options.addOption(?[]const u8, "name", zon_file.name);
+    options.addOption([]const u8, "name", name);
+    options.addOption([]const u8, "version", version);
 
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
@@ -28,7 +39,7 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     const lib = b.addStaticLibrary(.{
-        .name = "daily-counter",
+        .name = name,
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
         .root_source_file = b.path("src/root.zig"),
@@ -44,7 +55,7 @@ pub fn build(b: *std.Build) !void {
     b.installArtifact(lib);
 
     const exe = b.addExecutable(.{
-        .name = "daily-counter",
+        .name = name,
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
