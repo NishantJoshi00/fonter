@@ -1,6 +1,8 @@
 const std = @import("std");
 
 const root = @import("root.zig");
+const config = @import("config");
+const builtin = @import("builtin");
 
 pub const Action = enum {
     /// Print the version of the CLI tool.
@@ -64,9 +66,11 @@ pub const Action = enum {
     }
 
     const Version = struct {
-        pub fn run(_: std.mem.Allocator) !u8 {
-            const version = "0.1.0";
-            try std.io.getStdOut().writeAll(version);
+        pub fn run(alloc: std.mem.Allocator) !u8 {
+            const output = try std.fmt.allocPrint(alloc, "daily-counter: {s}\nzig: {}\narch: {s}", .{ "0.1.0", builtin.zig_version, builtin.target.cpu.arch.genericName() });
+            defer alloc.free(output);
+
+            try std.io.getStdOut().writeAll(output);
             return 0;
         }
     };

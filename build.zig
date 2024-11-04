@@ -13,6 +13,9 @@ pub fn build(b: *std.Build) !void {
 
     options.addOption(?[]const u8, "NOTION_DATABASE_ID", env.get("NOTION_DATABASE_ID"));
 
+    // options.addOption(?[]const u8, "version", zon_file.version);
+    // options.addOption(?[]const u8, "name", zon_file.name);
+
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options

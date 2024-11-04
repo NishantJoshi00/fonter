@@ -190,31 +190,45 @@ pub const NotionClient = struct {
         }
 
         fn get_body(_: *const Self, alloc: std.mem.Allocator) ![]const u8 {
-            const DateFilter = struct { property: []const u8, date: struct {
-                equals: []const u8,
-            } };
+            const Filter = struct {
+                filter: FilterContent,
 
-            // const NameFilter = struct { property: []const u8, rich_text: struct {
-            //     contains: []const u8,
-            // } };
+                const FilterContent = struct {
+                    @"and": [2]AndFilter,
+                };
 
-            const Body = struct { filter: DateFilter };
+                // Instead of a union, we'll make a struct that can represent both types
+                const AndFilter = struct {
+                    property: []const u8,
+                    // Optional fields for each type
+                    date: ?struct {
+                        equals: []const u8,
+                    } = null,
+                    rich_text: ?struct {
+                        contains: []const u8,
+                    } = null,
+                };
+            };
 
             const now = try today(alloc);
             defer alloc.free(now);
 
-            const typed_filter = DateFilter{ .property = "Date", .date = .{
-                .equals = now,
-            } };
+            const typed_body = Filter{
+                .filter = .{
+                    .@"and" = [2]Filter.AndFilter{
+                        .{ .property = "Date", .date = .{ .equals = now } },
+                        .{ .property = "Name", .rich_text = .{ .contains = "Counter" } },
+                    },
+                },
+            };
 
-            const typed_body = Body{ .filter = typed_filter };
-
-            const json_body = try std.json.stringifyAlloc(alloc, typed_body, .{});
+            const json_body = try std.json.stringifyAlloc(alloc, typed_body, .{ .emit_null_optional_fields = false });
 
             return json_body;
         }
 
         pub fn call(self: *const Self, client: *std.http.Client, alloc: std.mem.Allocator) ![]const u8 {
+
             const url = try Self.Query.get_url(self, alloc);
             defer alloc.free(url);
 
@@ -234,9 +248,10 @@ pub const NotionClient = struct {
                 .response_storage = .{ .dynamic = &response_arraylist },
             });
 
+            const result = try response_arraylist.toOwnedSlice();
+
             std.debug.assert(response.status == .ok);
 
-            const result = try response_arraylist.toOwnedSlice();
 
             return result;
         }
@@ -336,7 +351,7 @@ test "NotionClient.Query.body" {
     const body = try NotionClient.Query.get_body(&client, allocator);
     defer allocator.free(body);
 
-    const expected = "{\"filter\":{\"property\":\"Date\",\"date\":{\"equals\":\"2000-07-12\"}}}";
+    const expected = "{\"filter\":{\"and\":[{\"property\":\"Date\",\"date\":{\"equals\":\"2000-07-12\"}},{\"property\":\"Name\",\"rich_text\":{\"contains\":\"Counter\"}}]}}";
     try std.testing.expectEqualStrings(expected, body);
 }
 
